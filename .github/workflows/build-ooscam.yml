@@ -1,0 +1,52 @@
+name: Build OSCam .deb (ICAM + EMU + HEXDUMP)
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📥 Repository klonen
+      uses: actions/checkout@v3
+
+    - name: 🧰 Build-Tools installieren
+      run: |
+        sudo apt update
+        sudo apt install -y build-essential libssl-dev libusb-1.0-0-dev \
+                            libpcsclite-dev cmake pkg-config fakeroot dpkg-dev
+
+    - name: 🛠️ Kompilieren (mit ICAM, EMU, HEXDUMP)
+      run: |
+        make distclean || true
+        touch config.sh
+        echo "CONFIGURE_FLAGS='--enable-emu --enable-hexdump'" > config.sh
+        make CONF_DIR=/etc/tuxbox/config
+
+    - name: 📦 .deb-Paket erstellen
+      run: |
+        mkdir -p build/DEBIAN
+        mkdir -p build/usr/bin
+        cp oscam build/usr/bin/oscam
+        chmod 755 build/usr/bin/oscam
+
+        cat <<EOF > build/DEBIAN/control
+        Package: oscam
+        Version: 1.0
+        Section: base
+        Priority: optional
+        Architecture: armhf
+        Maintainer: OSCam Builder
+        Description: OSCam EMU+ICAM+Hexdump Binary for Dreambox DM920 (OE2.5)
+        EOF
+
+        dpkg-deb --build build oscam-deb
+
+    - name: 💾 Export als Artefakt
+      uses: actions/upload-artifact@v4
+      with:
+        name: oscam-icam-deb
+        path: oscam-deb.deb
