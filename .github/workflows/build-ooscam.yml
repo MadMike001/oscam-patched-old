@@ -15,7 +15,8 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y build-essential libssl-dev libusb-1.0-0-dev \
-                              libpcsclite-dev cmake pkg-config fakeroot dpkg-dev
+                              libpcsclite-dev cmake pkg-config fakeroot dpkg-dev \
+                              gcc-arm-linux-gnueabihf
 
       - name: 🛠️ Kompilieren direkt ohne config.sh
         run: |
