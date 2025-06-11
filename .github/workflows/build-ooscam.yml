@@ -29,14 +29,14 @@ jobs:
                    WITH_EXTENDED_CW=1 WITH_EMMLOG_HEX=1 \
                    CONF_DIR=/etc/tuxbox/config -j4"
 
-      - name: 📦 .deb-Paket erstellen
+      - name: 📦 .deb-Paket erstellen (rechtefreundlich)
         run: |
-          mkdir -p build/DEBIAN
-          mkdir -p build/usr/bin
-          cp Distribution/oscam build/usr/bin/oscam
-          chmod 755 build/usr/bin/oscam
+          mkdir -p oscam-deb/DEBIAN
+          mkdir -p oscam-deb/usr/bin
+          cp Distribution/oscam oscam-deb/usr/bin/oscam
+          chmod 755 oscam-deb/usr/bin/oscam
 
-          cat <<EOF > build/DEBIAN/control
+          cat <<EOF > oscam-deb/DEBIAN/control
           Package: oscam
           Version: 1.0
           Section: base
@@ -46,7 +46,7 @@ jobs:
           Description: OSCam ICAM+EMU+HEXDUMP für Dreambox DM920 (OE2.5)
           EOF
 
-          dpkg-deb --build build oscam-icam-oe25.deb
+          dpkg-deb --build oscam-deb oscam-icam-oe25.deb
 
       - name: 💾 Export als Artefakt
         uses: actions/upload-artifact@v4
