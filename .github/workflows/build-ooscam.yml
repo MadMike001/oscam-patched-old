@@ -29,11 +29,14 @@ jobs:
                    WITH_EXTENDED_CW=1 WITH_EMMLOG_HEX=1 \
                    CONF_DIR=/etc/tuxbox/config -j4"
 
+      - name: 🔍 Überprüfe Ausgabedateien
+        run: find . -type f -name "oscam*"
+
       - name: 📦 .deb-Paket erstellen (rechtefreundlich)
         run: |
           mkdir -p oscam-deb/DEBIAN
           mkdir -p oscam-deb/usr/bin
-          cp Distribution/oscam oscam-deb/usr/bin/oscam
+          cp ./oscam oscam-deb/usr/bin/oscam
           chmod 755 oscam-deb/usr/bin/oscam
 
           cat <<EOF > oscam-deb/DEBIAN/control
