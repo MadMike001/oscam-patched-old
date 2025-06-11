@@ -17,16 +17,14 @@ jobs:
         sudo apt install -y build-essential libssl-dev libusb-1.0-0-dev \
                             libpcsclite-dev cmake pkg-config fakeroot dpkg-dev
 
-    - name: 🛠️ Kompilieren (für ARMv7 OE2.5 mit HEXDUMP)
-      run: |
-        touch config.sh
-        echo "CONFIG=arm-linux-gnueabihf" >> config.sh
+      - name: 🛠️ Kompilieren (für ARMv7 OE2.5 mit HEXDUMP)
+       run: |
+        echo "CONFIG=arm-linux-gnueabihf" > config.sh
         echo "WITH_SSL=1" >> config.sh
         echo "WITH_EMU=1" >> config.sh
         echo "WITH_STREAMRELAY=1" >> config.sh
         echo "WITH_EXTENDED_CW=1" >> config.sh
         echo "WITH_EMMLOG_HEX=1" >> config.sh
-        make config
         make -j4
 
     - name: 📦 .deb-Paket erstellen
