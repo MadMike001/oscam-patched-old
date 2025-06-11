@@ -1,4 +1,4 @@
-name: Build OSCam for Dreambox DM920 (ICAM+EMU+Hexdump)
+name: Build OSCam for Dreambox ARM (ICAM+EMU+Hexdump via Docker)
 
 on:
   workflow_dispatch:
@@ -11,24 +11,23 @@ jobs:
       - name: 📥 Repository klonen
         uses: actions/checkout@v3
 
-      - name: 🧰 Build-Tools installieren
+      - name: 🐳 Docker ARM Crossbuilder vorbereiten
         run: |
-          sudo apt update
-          sudo apt install -y build-essential libssl-dev libusb-1.0-0-dev \
-                              libpcsclite-dev cmake pkg-config fakeroot dpkg-dev \
-                              gcc-arm-linux-gnueabihf
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static
 
-      - name: 🛠️ Kompilieren direkt ohne config.sh
+      - name: 🏗️ Kompilieren mit Docker (ARM OE2.5 Umgebung)
         run: |
-          make distclean || true
-          make CROSS=arm-linux-gnueabihf \
-               USE_SSL=1 \
-               USE_LIBUSB=1 \
-               USE_EMU=1 \
-               USE_STREAMRELAY=1 \
-               WITH_EXTENDED_CW=1 \
-               WITH_EMMLOG_HEX=1 \
-               CONF_DIR=/etc/tuxbox/config -j4
+          docker run --rm -v ${{ github.workspace }}:/build \
+            -w /build \
+            multiarch/ubuntu-core:armhf-bionic bash -c "\
+              apt-get update && \
+              apt-get install -y build-essential libusb-1.0-0-dev libpcsclite-dev \
+                                 libssl-dev cmake pkg-config && \
+              make distclean || true && \
+              make USE_LIBUSB=1 USE_SSL=1 USE_EMU=1 \
+                   WITH_EXTENDED_CW=1 WITH_EMMLOG_HEX=1 \
+                   CONF_DIR=/etc/tuxbox/config -j4"
 
       - name: 📦 .deb-Paket erstellen
         run: |
