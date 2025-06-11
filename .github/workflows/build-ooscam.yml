@@ -18,7 +18,7 @@ jobs:
                             libpcsclite-dev cmake pkg-config fakeroot dpkg-dev
 
     - name: 🛠️ Kompilieren (für ARMv7 OE2.5 mit HEXDUMP)
-       run: |
+      run: |
         echo "CONFIG=arm-linux-gnueabihf" > config.sh
         echo "WITH_SSL=1" >> config.sh
         echo "WITH_EMU=1" >> config.sh
