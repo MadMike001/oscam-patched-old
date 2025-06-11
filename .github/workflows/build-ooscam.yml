@@ -1,4 +1,4 @@
-name: Build OSCam .deb (ICAM + EMU + HEXDUMP)
+name: Build OSCam for Dreambox DM920 (ICAM+EMU+Hexdump)
 
 on:
   workflow_dispatch:
