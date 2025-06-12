@@ -32,7 +32,7 @@ jobs:
       - name: 🔍 Zeige gefundene OSCam-Binary
         run: find . -type f -name "oscam*" -executable
 
-      - name: 📦 .deb-Paket erstellen (kompatibel mit OE2.5, gzip)
+      - name: 📦 .deb-Paket erstellen (gzip-kompatibel für OE2.5)
         run: |
           mkdir -p oscam-deb/DEBIAN
           mkdir -p oscam-deb/usr/bin
