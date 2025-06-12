@@ -1,0 +1,65 @@
+name: Build OSCam for Dreambox ARM (ICAM+EMU+Hexdump via Docker)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Repository klonen
+        uses: actions/checkout@v3
+
+      - name: 🐳 Docker ARM Crossbuilder vorbereiten
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static
+
+      - name: 🏗️ Kompilieren mit Docker (ARM OE2.5 Umgebung)
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/build \
+            -w /build \
+            multiarch/ubuntu-core:armhf-bionic bash -c "\
+              apt-get update && \
+              apt-get install -y build-essential libusb-1.0-0-dev libpcsclite-dev \
+                                 libssl-dev cmake pkg-config && \
+              make distclean || true && \
+              make USE_LIBUSB=1 USE_SSL=1 USE_EMU=1 \
+                   WITH_EXTENDED_CW=1 WITH_EMMLOG_HEX=1 \
+                   CONF_DIR=/etc/tuxbox/config -j4"
+
+      - name: 🔍 Zeige gefundene OSCam-Binary
+        run: find . -type f -name "oscam*" -executable
+
+      - name: 📦 .deb-Paket erstellen (automatischer Binary-Pfad)
+        run: |
+          mkdir -p oscam-deb/DEBIAN
+          mkdir -p oscam-deb/usr/bin
+
+          OSCAM_BIN=$(find . -type f -name "oscam*" -executable | head -n1)
+          if [ -z "$OSCAM_BIN" ]; then
+            echo "❌ Keine OSCam-Binary gefunden!"
+            exit 1
+          fi
+
+          cp "$OSCAM_BIN" oscam-deb/usr/bin/oscam
+          chmod 755 oscam-deb/usr/bin/oscam
+
+          cat <<EOF > oscam-deb/DEBIAN/control
+          Package: oscam
+          Version: 1.0
+          Section: base
+          Priority: optional
+          Architecture: armhf
+          Maintainer: OSCam Builder
+          Description: OSCam ICAM+EMU+HEXDUMP für Dreambox DM920 (OE2.5)
+          EOF
+
+          dpkg-deb --build oscam-deb oscam-icam-oe25.deb
+
+      - name: 💾 Export als Artefakt
+        uses: actions/upload-artifact@v4
+        with:
+          name: oscam-icam-deb
+          path: oscam-icam-oe25.deb
