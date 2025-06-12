@@ -32,7 +32,7 @@ jobs:
       - name: 🔍 Zeige gefundene OSCam-Binary
         run: find . -type f -name "oscam*" -executable
 
-      - name: 📦 .deb-Paket erstellen (klassisches Format für OE2.5)
+      - name: 📦 .deb-Paket erstellen (kompatibel mit OE2.5, gzip)
         run: |
           mkdir -p oscam-deb/DEBIAN
           mkdir -p oscam-deb/usr/bin
@@ -56,7 +56,7 @@ jobs:
           Description: OSCam ICAM+EMU+HEXDUMP für Dreambox DM920 (OE2.5)
           EOF
 
-          dpkg-deb --build --root-owner-group oscam-deb oscam-icam-oe25.deb
+          DPKG_DEB_COMPRESS=gzip dpkg-deb --build --root-owner-group oscam-deb oscam-icam-oe25.deb
 
       - name: 💾 Export als Artefakt
         uses: actions/upload-artifact@v4
