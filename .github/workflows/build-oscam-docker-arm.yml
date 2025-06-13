@@ -23,7 +23,8 @@ jobs:
             multiarch/ubuntu-core:armhf-bionic bash -c "\
               apt-get update && \
               apt-get install -y build-essential libusb-1.0-0-dev libpcsclite-dev \
-                                 libssl-dev cmake pkg-config && \
+                                 libssl-dev cmake pkg-config xz-utils && \
+              rm -f SoftCam.Key && \
               make distclean || true && \
               make USE_LIBUSB=1 USE_SSL=1 USE_EMU=1 \
                    WITH_EXTENDED_CW=1 WITH_EMMLOG_HEX=1 \
@@ -32,7 +33,7 @@ jobs:
       - name: 🔍 Zeige gefundene OSCam-Binary
         run: find . -type f -name "oscam*" -executable
 
-      - name: 📦 .deb-Paket erstellen (gzip-kompatibel für OE2.5)
+      - name: 📦 .deb-Paket erstellen (xz-kompatibel für OE2.5)
         run: |
           mkdir -p oscam-deb/DEBIAN
           mkdir -p oscam-deb/usr/bin
@@ -56,7 +57,7 @@ jobs:
           Description: OSCam ICAM+EMU+HEXDUMP für Dreambox DM920 (OE2.5)
           EOF
 
-          DPKG_DEB_COMPRESS=gzip dpkg-deb --build --root-owner-group oscam-deb oscam-icam-oe25.deb
+          DPKG_DEB_COMPRESS=xz dpkg-deb --build --root-owner-group oscam-deb oscam-icam-oe25.deb
 
       - name: 💾 Export als Artefakt
         uses: actions/upload-artifact@v4
