@@ -1,0 +1,41 @@
+name: Build OSCam Binary for Dreambox ARM (ICAM+EMU+Hexdump)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Repository klonen
+        uses: actions/checkout@v3
+
+      - name: 🐳 Docker ARM Crossbuilder vorbereiten
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static
+
+      - name: 🏗️ Kompilieren mit Docker (ARM OE2.5 Umgebung)
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/build \
+            -w /build \
+            multiarch/ubuntu-core:armhf-bionic bash -c "\
+              apt-get update && \
+              apt-get install -y build-essential libusb-1.0-0-dev libpcsclite-dev \
+                                 libssl-dev cmake pkg-config xz-utils && \
+              rm -f SoftCam.Key && \
+              make distclean || true && \
+              make USE_LIBUSB=1 USE_SSL=1 USE_EMU=1 \
+                   WITH_EXTENDED_CW=1 WITH_EMMLOG_HEX=1 \
+                   CONF_DIR=/etc/tuxbox/config -j4"
+
+      - name: 🔍 Zeige gefundene OSCam-Binary
+        run: find . -type f -name "oscam*" -executable
+
+      - name: 💾 Exportiere nur die OSCam-Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: oscam-icam-binary
+          path: |
+            $(find . -type f -name "oscam*" -executable | head -n1)
