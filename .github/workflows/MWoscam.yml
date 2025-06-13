@@ -19,6 +19,7 @@ jobs:
 
       - name: 🛠️ Kompilieren (ARM Binary mit ICAM+EMU+Hexdump)
         run: |
+          rm -f SoftCam.Key
           make distclean || true
           make USE_LIBUSB=1 USE_SSL=1 USE_EMU=1 WITH_EXTENDED_CW=1 \
                WITH_EMMLOG_HEX=1 CONF_DIR=/etc/tuxbox/config -j4
