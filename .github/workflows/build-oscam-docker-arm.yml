@@ -1,4 +1,4 @@
-name: Build OSCam for Dreambox ARM (ICAM+EMU+Hexdump via Docker)
+name: Build OSCam Binary for Dreambox ARM (ICAM+EMU+Hexdump)
 
 on:
   workflow_dispatch:
@@ -33,34 +33,9 @@ jobs:
       - name: 🔍 Zeige gefundene OSCam-Binary
         run: find . -type f -name "oscam*" -executable
 
-      - name: 📦 .deb-Paket erstellen (xz-kompatibel für OE2.5)
-        run: |
-          mkdir -p oscam-deb/DEBIAN
-          mkdir -p oscam-deb/usr/bin
-
-          OSCAM_BIN=$(find . -type f -name "oscam*" -executable | head -n1)
-          if [ -z "$OSCAM_BIN" ]; then
-            echo "❌ Keine OSCam-Binary gefunden!"
-            exit 1
-          fi
-
-          cp "$OSCAM_BIN" oscam-deb/usr/bin/oscam
-          chmod 755 oscam-deb/usr/bin/oscam
-
-          cat <<EOF > oscam-deb/DEBIAN/control
-          Package: oscam
-          Version: 1.0
-          Section: base
-          Priority: optional
-          Architecture: armhf
-          Maintainer: OSCam Builder
-          Description: OSCam ICAM+EMU+HEXDUMP für Dreambox DM920 (OE2.5)
-          EOF
-
-          DPKG_DEB_COMPRESS=xz dpkg-deb --build --root-owner-group oscam-deb oscam-icam-oe25.deb
-
-      - name: 💾 Export als Artefakt
+      - name: 💾 Exportiere nur die OSCam-Binary
         uses: actions/upload-artifact@v4
         with:
-          name: oscam-icam-deb
-          path: oscam-icam-oe25.deb
+          name: oscam-icam-binary
+          path: |
+            $(find . -type f -name "oscam*" -executable | head -n1)
