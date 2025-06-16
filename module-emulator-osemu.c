@@ -811,8 +811,8 @@ uint8_t emu_read_keyfile(struct s_reader *rdr, const char *opath)
 }
 
 #if defined(WITH_SOFTCAM) && !defined(__APPLE__) && !defined(__ANDROID__)
-extern uint8_t SoftCamKey_Data[]    __asm__("_binary_SoftCam_Key_start");
-extern uint8_t SoftCamKey_DataEnd[] __asm__("_binary_SoftCam_Key_end");
+// extern uint8_t SoftCamKey_Data[]    __asm__("_binary_SoftCam_Key_start");
+// extern uint8_t SoftCamKey_DataEnd[] __asm__("_binary_SoftCam_Key_end");
 
 void emu_read_keymemory(struct s_reader *rdr)
 {
