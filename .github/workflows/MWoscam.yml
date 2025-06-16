@@ -9,7 +9,7 @@ jobs:
 
     steps:
       - name: 📥 Quellcode auschecken
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: ⬇️ Toolchain von GitHub Release laden
         run: |
