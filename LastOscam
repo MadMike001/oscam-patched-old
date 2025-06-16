@@ -1,0 +1,46 @@
+name: Build OSCam Binary for Dreambox DM920 (GP4.2)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Repository klonen
+        uses: actions/checkout@v3
+
+      - name: 🔧 System vorbereiten
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake git \
+            libusb-1.0-0-dev libpcsclite-dev pkg-config \
+            libssl-dev xz-utils
+
+      - name: 🧰 Toolchain herunterladen
+        run: |
+          mkdir -p toolchain
+          cd toolchain
+          wget https://downloads.dreambox-tools.info/toolchains/oe2.5/arm-oe-linux-gnueabi-toolchain.tar.xz
+          tar -xf arm-oe-linux-gnueabi-toolchain.tar.xz
+          echo "TOOLCHAIN_PATH=$(pwd)/opt/cross/bin" >> $GITHUB_ENV
+
+      - name: 🏗️ Build OSCam Binary (Dreambox DM920)
+        run: |
+          export PATH="$TOOLCHAIN_PATH:$PATH"
+          make distclean || true
+          make \
+            CROSS=arm-oe-linux-gnueabi- \
+            CONF=arm-dreambox \
+            USE_SSL=1 \
+            USE_LIBUSB=1 \
+            USE_PCSC=1 \
+            USE_EMU=1 \
+            LOGHEXDUMP=1
+
+      - name: 📦 Artefakt hochladen (Binary)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oscam-dm920
+          path: oscam
