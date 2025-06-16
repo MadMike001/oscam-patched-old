@@ -1,4 +1,4 @@
-name: Build OSCam Binary (Dreambox DM920)
+name: Build OSCam for Dreambox ARM (ICAM+EMU+Hexdump)
 
 on:
   workflow_dispatch:
@@ -8,36 +8,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Repository klonen
+      - name: 📥 Quellcode auschecken
         uses: actions/checkout@v3
 
-      - name: 🛠️ Toolchain herunterladen (Mirror)
+      - name: ⬇️ Toolchain herunterladen und entpacken
         run: |
           mkdir -p toolchain
-          wget https://dreamboxupdate.com/download/tools/toolchain/oe2.5/arm-oe-linux-gnueabi-toolchain.tar.xz -O toolchain/toolchain.tar.xz
+          curl -L https://github.com/MadMike001/oscam-patched-old/archive/refs/tags/toolchain-v1.tar.gz -o toolchain.tar.gz
+          tar -xzf toolchain.tar.gz -C toolchain --strip-components=1
 
-      - name: 📦 Toolchain entpacken
-        run: |
-          mkdir -p toolchain/sysroot
-          tar -xf toolchain/toolchain.tar.xz -C toolchain/sysroot
-
-      - name: 🧰 Build-Abhängigkeiten installieren
+      - name: 🔧 Environment vorbereiten
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential libusb-1.0-0-dev libpcsclite-dev \
                                   libssl-dev cmake pkg-config
 
-      - name: 🏗️ OSCam bauen (mit ICAM, EMU, Hexdump)
+      - name: 🛠️ OSCam kompilieren (ICAM+EMU+Hexdump)
         run: |
+          export PATH="${GITHUB_WORKSPACE}/toolchain/bin:$PATH"
+          export CC=arm-oe-linux-gnueabi-gcc
           make distclean || true
-          make config
-          make USE_LIBUSB=1 USE_SSL=1 WEBIF=1 HAVE_DVBAPI=1 \
-               WITH_EMU=1 WITH_DEBUG=1 \
-               CONFIG=arm-dreambox-linux-gnueabi \
-               CC=toolchain/sysroot/bin/arm-oe-linux-gnueabi-gcc
+          touch config.sh
+          echo "CONFIG_LIBUSB=y" >> config.sh
+          echo "CONFIG_SSL=y" >> config.sh
+          echo "CONFIG_ICAM=y" >> config.sh
+          echo "CONFIG_EMU=y" >> config.sh
+          echo "CONFIG_HEXDUMP=y" >> config.sh
+          make -j2
 
-      - name: 📤 Artefakt hochladen (Binary)
+      - name: 📦 Binary speichern
         uses: actions/upload-artifact@v3
         with:
-          name: oscam-dm920
-          path: ./oscam
+          name: oscam-dreambox-arm
+          path: oscam
