@@ -37,7 +37,7 @@ jobs:
           make -j2
 
       - name: 📦 Binary speichern
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: oscam-dreambox-arm
           path: oscam
