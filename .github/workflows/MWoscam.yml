@@ -1,4 +1,4 @@
-name: Build OSCam Binary for Dreambox DM920 (GP4.2)
+name: Build OSCam for Dreambox ARM (ICAM+EMU+Hexdump)
 
 on:
   workflow_dispatch:
@@ -8,39 +8,38 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Repository klonen
+      - name: 📥 Repo klonen (oscam-patched-old)
         uses: actions/checkout@v3
+        with:
+          repository: oscam-emu/oscam-patched-old
+          path: oscam
 
-      - name: 🔧 System vorbereiten
+      - name: 🐳 Docker vorbereiten (ARM Crossbuild)
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake git \
-            libusb-1.0-0-dev libpcsclite-dev pkg-config \
-            libssl-dev xz-utils
+          sudo apt-get install -y qemu-user-static
 
-      - name: 🧰 Toolchain herunterladen
+      - name: 🏗️ Kompilieren in ARM Umgebung (OE2.5)
         run: |
-          mkdir -p toolchain
-          cd toolchain
-          wget https://downloads.dreambox-tools.info/toolchains/oe2.5/arm-oe-linux-gnueabi-toolchain.tar.xz
-          tar -xf arm-oe-linux-gnueabi-toolchain.tar.xz
-          echo "TOOLCHAIN_PATH=$(pwd)/opt/cross/bin" >> $GITHUB_ENV
+          docker run --rm -v ${{ github.workspace }}/oscam:/build \
+            -w /build \
+            multiarch/ubuntu-core:armhf-bionic bash -c "\
+              apt-get update && \
+              apt-get install -y build-essential libusb-1.0-0-dev libpcsclite-dev \
+                                 libssl-dev cmake pkg-config git xz-utils && \
+              make distclean || true && \
+              touch config.sh && \
+              echo 'CONFIG_USE_LIBUSB=1' >> config.sh && \
+              echo 'CONFIG_USE_SSL=1' >> config.sh && \
+              echo 'CONFIG_LIB_CRYPTO=internal' >> config.sh && \
+              echo 'CONFIG_LIB_UCODES=internal' >> config.sh && \
+              echo 'CONFIG_ENABLE_EMU=1' >> config.sh && \
+              echo 'CONFIG_ENABLE_HEXDUMP=1' >> config.sh && \
+              echo 'CONFIG_ENABLE_ICAM=1' >> config.sh && \
+              make -j2"
 
-      - name: 🏗️ Build OSCam Binary (Dreambox DM920)
-        run: |
-          export PATH="$TOOLCHAIN_PATH:$PATH"
-          make distclean || true
-          make \
-            CROSS=arm-oe-linux-gnueabi- \
-            CONF=arm-dreambox \
-            USE_SSL=1 \
-            USE_LIBUSB=1 \
-            USE_PCSC=1 \
-            USE_EMU=1 \
-            LOGHEXDUMP=1
-
-      - name: 📦 Artefakt hochladen (Binary)
-        uses: actions/upload-artifact@v4
+      - name: 📦 Binary bereitstellen (oscam)
+        uses: actions/upload-artifact@v3
         with:
           name: oscam-dm920
-          path: oscam
+          path: oscam/oscam
