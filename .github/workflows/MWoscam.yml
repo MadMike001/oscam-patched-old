@@ -23,19 +23,18 @@ jobs:
           sudo apt-get install -y build-essential libusb-1.0-0-dev libpcsclite-dev \
                                   libssl-dev cmake pkg-config
 
-      - name: 🛠️ OSCam bauen mit ICAM, EMU, Hexdump (ohne WITH_SOFTCAM)
+      - name: 🛠️ OSCam bauen mit ICAM, EMU, Hexdump (ohne SoftCam.Key im Binary)
         run: |
           export PATH="${GITHUB_WORKSPACE}/toolchain/bin:$PATH"
           export CC=arm-oe-linux-gnueabi-gcc
           make distclean || true
-          touch config.sh
-          echo "CONFIG_LIBUSB=y" >> config.sh
-          echo "CONFIG_SSL=y" >> config.sh
-          echo "CONFIG_ICAM=y" >> config.sh
-          echo "CONFIG_EMU=y" >> config.sh
-          echo "CONFIG_HEXDUMP=y" >> config.sh
-          echo "CONFIG_WITH_SOFTCAM=n" >> config.sh
-          make -j2
+          make -j2 \
+            USE_LIBUSB=1 \
+            USE_SSL=1 \
+            USE_EMU=1 \
+            WITH_SOFTCAM=0 \
+            CONFIG_ICAM=y \
+            CONFIG_HEXDUMP=y
 
       - name: 📦 Binary speichern
         uses: actions/upload-artifact@v4
