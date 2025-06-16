@@ -23,7 +23,7 @@ jobs:
           sudo apt-get install -y build-essential libusb-1.0-0-dev libpcsclite-dev \
                                   libssl-dev cmake pkg-config
 
-      - name: 🛠️ OSCam bauen mit ICAM, EMU, Hexdump
+      - name: 🛠️ OSCam bauen mit ICAM, EMU, Hexdump (ohne WITH_SOFTCAM)
         run: |
           export PATH="${GITHUB_WORKSPACE}/toolchain/bin:$PATH"
           export CC=arm-oe-linux-gnueabi-gcc
@@ -34,6 +34,7 @@ jobs:
           echo "CONFIG_ICAM=y" >> config.sh
           echo "CONFIG_EMU=y" >> config.sh
           echo "CONFIG_HEXDUMP=y" >> config.sh
+          echo "CONFIG_WITH_SOFTCAM=n" >> config.sh
           make -j2
 
       - name: 📦 Binary speichern
