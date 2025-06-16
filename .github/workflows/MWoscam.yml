@@ -1,4 +1,4 @@
-name: Build MW OSCam for ARM (ICAM+EMU+HEXDUMP)
+name: Build OSCam Binary for Dreambox DM920 (GP4.2)
 
 on:
   workflow_dispatch:
@@ -8,44 +8,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Quellcode holen
+      - name: 📥 Repository klonen
         uses: actions/checkout@v3
 
-      - name: 🐧 Build-Abhängigkeiten installieren
+      - name: 🔧 System vorbereiten
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libusb-1.0-0-dev \
-              libssl-dev pkg-config xz-utils
+          sudo apt-get install -y build-essential cmake git \
+            libusb-1.0-0-dev libpcsclite-dev pkg-config \
+            libssl-dev xz-utils
 
-      - name: 🛠️ Kompilieren (ARM Binary mit ICAM+EMU+Hexdump)
+      - name: 🧰 Toolchain herunterladen
         run: |
-          rm -f SoftCam.Key
+          mkdir -p toolchain
+          cd toolchain
+          wget https://downloads.dreambox-tools.info/toolchains/oe2.5/arm-oe-linux-gnueabi-toolchain.tar.xz
+          tar -xf arm-oe-linux-gnueabi-toolchain.tar.xz
+          echo "TOOLCHAIN_PATH=$(pwd)/opt/cross/bin" >> $GITHUB_ENV
+
+      - name: 🏗️ Build OSCam Binary (Dreambox DM920)
+        run: |
+          export PATH="$TOOLCHAIN_PATH:$PATH"
           make distclean || true
-          make USE_LIBUSB=1 USE_SSL=1 USE_EMU=1 WITH_EXTENDED_CW=1 \
-               WITH_EMMLOG_HEX=1 CONF_DIR=/etc/tuxbox/config -j4
+          make \
+            CROSS=arm-oe-linux-gnueabi- \
+            CONF=arm-dreambox \
+            USE_SSL=1 \
+            USE_LIBUSB=1 \
+            USE_PCSC=1 \
+            USE_EMU=1 \
+            LOGHEXDUMP=1
 
-      - name: 📦 .deb Paket bauen
-        run: |
-          mkdir -p oscam-deb/DEBIAN
-          mkdir -p oscam-deb/usr/bin
-
-          cp ./oscam oscam-deb/usr/bin/oscam
-          chmod 755 oscam-deb/usr/bin/oscam
-
-          cat <<EOF > oscam-deb/DEBIAN/control
-          Package: oscam
-          Version: 1.0
-          Section: base
-          Priority: optional
-          Architecture: armhf
-          Maintainer: MW OSCam Build
-          Description: OSCam mit ICAM, EMU und Hexdump für Dreambox ARM OE2.5
-          EOF
-
-          DPKG_DEB_COMPRESS=xz dpkg-deb --build --root-owner-group oscam-deb oscam-icam-oe25.deb
-
-      - name: 💾 Exportiere Paket
+      - name: 📦 Artefakt hochladen (Binary)
         uses: actions/upload-artifact@v4
         with:
-          name: oscam-icam-deb
-          path: oscam-icam-oe25.deb
+          name: oscam-dm920
+          path: oscam
