@@ -1,4 +1,4 @@
-name: Build OSCam for Dreambox ARM (ICAM+EMU+Hexdump)
+name: Build OSCam Dreambox ARM (ICAM+EMU+WITH_SOFTCAM)
 
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ jobs:
       - name: 📥 Quellcode auschecken
         uses: actions/checkout@v4
 
-      - name: ⬇️ Toolchain von GitHub Release laden
+      - name: ⬇️ Toolchain laden
         run: |
           mkdir -p toolchain
           curl -L https://github.com/MadMike001/oscam-patched-old/archive/refs/tags/toolchain-v1.tar.gz -o toolchain.tar.gz
@@ -20,14 +20,17 @@ jobs:
       - name: 🔧 Build-Umgebung vorbereiten
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libusb-1.0-0-dev libpcsclite-dev \
+          sudo apt-get install -y build-essential binutils \
+                                  libusb-1.0-0-dev libpcsclite-dev \
                                   libssl-dev cmake pkg-config
 
-      - name: 🧼 SoftCamKey Funktion deaktivieren
+      - name: 🔑 SoftCam.Key einbetten (für ARM)
         run: |
-          sed -i 's/^#if defined(WITH_SOFTCAM)/#if 0/' module-emulator-osemu.c
+          echo 'F 00000000 00000000 1122334455667788' > SoftCam.Key
+          toolchain/bin/arm-oe-linux-gnueabi-objcopy \
+            -I binary -O elf32-little -B arm SoftCam.Key SoftCam_Key.o
 
-      - name: 🛠️ OSCam bauen mit ICAM, EMU, Hexdump
+      - name: 🛠️ OSCam bauen für Dreambox (ARM, WITH_SOFTCAM)
         run: |
           export PATH="${GITHUB_WORKSPACE}/toolchain/bin:$PATH"
           export CC=arm-oe-linux-gnueabi-gcc
@@ -36,11 +39,13 @@ jobs:
             USE_LIBUSB=1 \
             USE_SSL=1 \
             USE_EMU=1 \
+            WITH_SOFTCAM=1 \
             CONFIG_ICAM=y \
-            CONFIG_HEXDUMP=y
+            CONFIG_HEXDUMP=y \
+            EXTRA_OBJS=SoftCam_Key.o
 
-      - name: 📦 Binary speichern
+      - name: 📦 Binary hochladen
         uses: actions/upload-artifact@v4
         with:
-          name: oscam-dreambox-arm
+          name: oscam-dreambox-arm-softcam
           path: oscam
