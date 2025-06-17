@@ -1,4 +1,4 @@
-name: Build OSCam Binary for Dreambox ARM (ICAM+EMU+Hexdump)
+name: Build OSCam for Dreambox OE2.5 (ICAM+EMU+Hexdump)
 
 on:
   workflow_dispatch:
@@ -9,32 +9,40 @@ jobs:
 
     steps:
       - name: 📥 Repository klonen
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: 🐳 Docker ARM Crossbuilder vorbereiten
+      - name: ⬇️ Toolchain herunterladen (Dreambox-kompatibel)
+        run: |
+          mkdir -p toolchain
+          curl -L https://github.com/MadMike001/oscam-patched-old/archive/refs/tags/toolchain-v1.tar.gz -o toolchain.tar.gz
+          tar -xzf toolchain.tar.gz -C toolchain --strip-components=1
+
+      - name: 🔧 Build-Umgebung vorbereiten
         run: |
           sudo apt-get update
-          sudo apt-get install -y qemu-user-static
+          sudo apt-get install -y build-essential libusb-1.0-0-dev \
+                                  libpcsclite-dev libssl-dev \
+                                  pkg-config cmake binutils xz-utils
 
-      - name: 🏗️ Kompilieren mit Docker (ARM OE2.5 Umgebung)
+      - name: 🛠️ OSCam bauen für Dreambox OE2.5
         run: |
-          docker run --rm -v ${{ github.workspace }}:/build \
-            -w /build \
-            multiarch/ubuntu-core:armhf-bionic bash -c "\
-              apt-get update && \
-              apt-get install -y build-essential libusb-1.0-0-dev libpcsclite-dev \
-                                 libssl-dev cmake pkg-config xz-utils && \
-              make distclean || true && \
-              make USE_LIBUSB=1 USE_SSL=1 USE_EMU=1 \
-                   WITH_EXTENDED_CW=1 WITH_EMMLOG_HEX=1 \
-                   CONFIG_ICAM=y CONFIG_HEXDUMP=y \
-                   CONF_DIR=/etc/tuxbox/config -j4"
+          export PATH="${GITHUB_WORKSPACE}/toolchain/bin:$PATH"
+          export CROSS=arm-oe-linux-gnueabi-
+          make distclean || true
+          make -j2 \
+            CROSS=${CROSS} \
+            USE_LIBUSB=1 \
+            USE_SSL=1 \
+            USE_EMU=1 \
+            CONFIG_ICAM=y \
+            CONFIG_HEXDUMP=y \
+            CONF_DIR=/etc/tuxbox/config
 
-      - name: 🔍 Gefundene OSCam-Datei ermitteln
+      - name: 🔍 Binary-Datei ermitteln
         id: oscamfile
         run: |
           file=$(find . -type f -name "oscam*" -executable | head -n1)
-          echo "Gefundene Datei: $file"
+          echo "Gefundene Binary: $file"
           echo "file=$file" >> $GITHUB_OUTPUT
 
       - name: 💾 OSCam Binary hochladen
