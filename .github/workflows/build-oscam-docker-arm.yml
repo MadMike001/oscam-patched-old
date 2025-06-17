@@ -24,18 +24,21 @@ jobs:
               apt-get update && \
               apt-get install -y build-essential libusb-1.0-0-dev libpcsclite-dev \
                                  libssl-dev cmake pkg-config xz-utils && \
-              rm -f SoftCam.Key && \
               make distclean || true && \
               make USE_LIBUSB=1 USE_SSL=1 USE_EMU=1 \
                    WITH_EXTENDED_CW=1 WITH_EMMLOG_HEX=1 \
+                   CONFIG_ICAM=y CONFIG_HEXDUMP=y \
                    CONF_DIR=/etc/tuxbox/config -j4"
 
-      - name: 🔍 Zeige gefundene OSCam-Binary
-        run: find . -type f -name "oscam*" -executable
+      - name: 🔍 Gefundene OSCam-Datei ermitteln
+        id: oscamfile
+        run: |
+          file=$(find . -type f -name "oscam*" -executable | head -n1)
+          echo "Gefundene Datei: $file"
+          echo "file=$file" >> $GITHUB_OUTPUT
 
-      - name: 💾 Exportiere nur die OSCam-Binary
+      - name: 💾 OSCam Binary hochladen
         uses: actions/upload-artifact@v4
         with:
-          name: oscam-icam-binary
-          path: |
-            $(find . -type f -name "oscam*" -executable | head -n1)
+          name: oscam-dreambox-arm
+          path: ${{ steps.oscamfile.outputs.file }}
