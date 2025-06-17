@@ -23,6 +23,10 @@ jobs:
           sudo apt-get install -y build-essential libusb-1.0-0-dev libpcsclite-dev \
                                   libssl-dev cmake pkg-config
 
+      - name: 🧼 SoftCamKey Funktion deaktivieren
+        run: |
+          sed -i 's/^#if defined(WITH_SOFTCAM)/#if 0/' module-emulator-osemu.c
+
       - name: 🛠️ OSCam bauen mit ICAM, EMU, Hexdump
         run: |
           export PATH="${GITHUB_WORKSPACE}/toolchain/bin:$PATH"
@@ -33,8 +37,7 @@ jobs:
             USE_SSL=1 \
             USE_EMU=1 \
             CONFIG_ICAM=y \
-            CONFIG_HEXDUMP=y \
-            WITH_SOFTCAM=0
+            CONFIG_HEXDUMP=y
 
       - name: 📦 Binary speichern
         uses: actions/upload-artifact@v4
