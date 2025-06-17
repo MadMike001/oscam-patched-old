@@ -1,4 +1,4 @@
-name: Build OSCam for Dreambox OE2.5 (ICAM+EMU+Hexdump)
+name: Build OSCam for Dreambox ARM (ICAM+EMU+Hexdump)
 
 on:
   workflow_dispatch:
@@ -11,42 +11,31 @@ jobs:
       - name: 📥 Repository klonen
         uses: actions/checkout@v4
 
-      - name: ⬇️ Linaro Toolchain herunterladen & entpacken
-        run: |
-          mkdir toolchain
-          curl -L https://releases.linaro.org/components/toolchain/binaries/4.9-2017.01/arm-linux-gnueabi/gcc-linaro-4.9-2017.01-x86_64_arm-linux-gnueabi.tar.xz -o toolchain.tar.xz
-          tar -xf toolchain.tar.xz -C toolchain --strip-components=1
-
-      - name: 🔧 Build-Umgebung vorbereiten
+      - name: 🐳 Docker ARM Crossbuilder vorbereiten
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libusb-1.0-0-dev libpcsclite-dev \
-                                  libssl-dev cmake pkg-config binutils xz-utils
+          sudo apt-get install -y qemu-user-static
 
-      - name: 🛠️ OSCam bauen
+      - name: 🏗️ Kompilieren mit Docker (ARM OE2.5 Umgebung)
         run: |
-          export PATH="$GITHUB_WORKSPACE/toolchain/bin:$PATH"
-          export CROSS=arm-linux-gnueabi-
-          which ${CROSS}gcc || (echo "❌ Compiler nicht gefunden" && exit 1)
-          ${CROSS}gcc --version
-          make distclean || true
-          make -j2 \
-            CROSS=${CROSS} \
-            USE_LIBUSB=1 \
-            USE_SSL=1 \
-            USE_EMU=1 \
-            CONFIG_ICAM=y \
-            CONFIG_HEXDUMP=y \
-            CONF_DIR=/etc/tuxbox/config
+          docker run --rm -v ${{ github.workspace }}:/build \
+            -w /build \
+            multiarch/ubuntu-core:armhf-bionic bash -c "\
+              apt-get update && \
+              apt-get install -y build-essential libusb-1.0-0-dev libpcsclite-dev \
+                                 libssl-dev cmake pkg-config xz-utils && \
+              make distclean || true && \
+              make USE_LIBUSB=1 USE_SSL=1 USE_EMU=1 \
+                   WITH_EXTENDED_CW=1 WITH_EMMLOG_HEX=1 \
+                   CONFIG_ICAM=y CONFIG_HEXDUMP=y \
+                   CONF_DIR=/etc/tuxbox/config -j4"
 
-      - name: 🔍 Binary finden
-        id: oscamfile
-        run: |
-          file=$(find . -type f -name "oscam*" -executable | head -n1)
-          echo "file=$file" >> $GITHUB_OUTPUT
+      - name: 🔍 Zeige gefundene OSCam-Binary
+        run: find . -type f -name "oscam*" -executable
 
-      - name: 💾 Binary als Artifact speichern
+      - name: 💾 Exportiere OSCam-Binary
         uses: actions/upload-artifact@v4
         with:
-          name: oscam-dreambox-arm
-          path: ${{ steps.oscamfile.outputs.file }}
+          name: oscam-icam-dm920
+          path: |
+            $(find . -type f -name "oscam*" -executable | head -n1)
