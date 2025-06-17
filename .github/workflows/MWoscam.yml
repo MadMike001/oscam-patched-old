@@ -30,12 +30,14 @@ jobs:
                    CONFIG_ICAM=y CONFIG_HEXDUMP=y \
                    CONF_DIR=/etc/tuxbox/config -j4"
 
-      - name: 🔍 Zeige gefundene OSCam-Binary
-        run: find . -type f -name "oscam*" -executable
+      - name: 💾 OSCam-Binary nach festen Pfad verschieben
+        run: |
+          mkdir -p output
+          OSCAM_BIN=$(find . -type f -name "oscam*" -executable | head -n1)
+          cp "$OSCAM_BIN" output/oscam-dm920
 
-      - name: 💾 Exportiere OSCam-Binary
+      - name: 📦 Upload der OSCam-Binary
         uses: actions/upload-artifact@v4
         with:
           name: oscam-icam-dm920
-          path: |
-            $(find . -type f -name "oscam*" -executable | head -n1)
+          path: output/oscam-dm920
