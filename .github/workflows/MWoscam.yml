@@ -1,4 +1,4 @@
-name: Build OSCam with Linaro Toolchain (Dreambox OE2.5)
+name: Build OSCam for Dreambox OE2.5 (ICAM+EMU+Hexdump)
 
 on:
   workflow_dispatch:
@@ -11,20 +11,24 @@ jobs:
       - name: 📥 Repository klonen
         uses: actions/checkout@v4
 
-      - name: 🔽 Toolchain entpacken
+      - name: ⬇️ Linaro Toolchain von GitHub laden
         run: |
-          mkdir -p toolchain
-          curl -L https://github.com/MadMike001/oscam-patched-old/releases/download/altneuOscam/gcc-linaro-4.9-2017.01.tar.xz -o toolchain.tar.xz
-          tar -xf toolchain.tar.xz -C toolchain
+          mkdir toolchain
+          curl -L https://releases.linaro.org/components/toolchain/binaries/4.9-2017.01/arm-linux-gnueabi/gcc-linaro-4.9-2017.01-x86_64_arm-linux-gnueabi.tar.xz -o toolchain.tar.xz
+          tar -xf toolchain.tar.xz -C toolchain --strip-components=1
 
-      - name: 🛠️ OSCam bauen
+      - name: 🔧 Build-Umgebung vorbereiten
         run: |
-          export TOOLCHAIN_BIN=$(find toolchain -type f -name arm-linux-gnueabi-gcc | head -n1 | xargs dirname)
-          echo "✅ Toolchain gefunden unter: $TOOLCHAIN_BIN"
-          export PATH="$TOOLCHAIN_BIN:$PATH"
-          export CROSS=arm-linux-gnueabi-
           sudo apt-get update
-          sudo apt-get install -y build-essential libusb-1.0-0-dev libpcsclite-dev libssl-dev cmake pkg-config binutils
+          sudo apt-get install -y build-essential libusb-1.0-0-dev libpcsclite-dev \
+                                  libssl-dev cmake pkg-config binutils xz-utils
+
+      - name: 🛠️ OSCam bauen mit Linaro Toolchain
+        run: |
+          export PATH="$GITHUB_WORKSPACE/toolchain/bin:$PATH"
+          export CROSS=arm-linux-gnueabi-
+          which ${CROSS}gcc || (echo "❌ Compiler nicht gefunden" && exit 1)
+          ${CROSS}gcc --version
           make distclean || true
           make -j2 \
             CROSS=${CROSS} \
@@ -35,9 +39,15 @@ jobs:
             CONFIG_HEXDUMP=y \
             CONF_DIR=/etc/tuxbox/config
 
-      - name: 📦 Binary als Artifact hochladen
+      - name: 🔍 Gefundene Binary anzeigen
+        id: oscamfile
+        run: |
+          file=$(find . -type f -name "oscam*" -executable | head -n1)
+          echo "Binary gefunden: $file"
+          echo "file=$file" >> $GITHUB_OUTPUT
+
+      - name: 💾 Binary als Artifact hochladen
         uses: actions/upload-artifact@v4
         with:
           name: oscam-dreambox-arm
-          path: |
-            $(find . -type f -name "oscam*" -executable | head -n1)
+          path: ${{ steps.oscamfile.outputs.file }}
