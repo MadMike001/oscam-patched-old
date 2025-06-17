@@ -11,7 +11,7 @@ jobs:
       - name: 📥 Repository klonen
         uses: actions/checkout@v4
 
-      - name: ⬇️ Linaro Toolchain aus GitHub Release laden
+      - name: ⬇️ Toolchain aus GitHub Release laden
         run: |
           mkdir -p toolchain
           curl -L https://github.com/MadMike001/oscam-patched-old/releases/download/altneuOscam/gcc-linaro-4.9-2017.01.tar.xz -o toolchain.tar.xz
@@ -25,7 +25,7 @@ jobs:
 
       - name: 🛠️ OSCam bauen mit Linaro Toolchain
         run: |
-          export TOOLCHAIN_BIN=$(find $GITHUB_WORKSPACE/toolchain -type d -name "bin" -print -quit)
+          export TOOLCHAIN_BIN=$(find "$GITHUB_WORKSPACE/toolchain" -type f -name arm-linux-gnueabi-gcc -exec dirname {} \;)
           export PATH="$TOOLCHAIN_BIN:$PATH"
           export CROSS=arm-linux-gnueabi-
           make distclean || true
@@ -42,7 +42,7 @@ jobs:
         id: oscamfile
         run: |
           file=$(find . -type f -name "oscam*" -executable | head -n1)
-          echo "Binary: $file"
+          echo "Gefundene Binary: $file"
           echo "file=$file" >> $GITHUB_OUTPUT
 
       - name: 💾 Binary als Artifact hochladen
