@@ -1,4 +1,4 @@
-name: Build OSCam for Dreambox ARM (ICAM+EMU+Hexdump)
+name: Build OSCam for Dreambox DM920 (ICAM+EMU+HEXDUMP)
 
 on:
   workflow_dispatch:
@@ -11,12 +11,12 @@ jobs:
       - name: 📥 Repository klonen
         uses: actions/checkout@v4
 
-      - name: 🐳 Docker ARM Crossbuilder vorbereiten
+      - name: 🐳 Docker ARM-Builder vorbereiten
         run: |
           sudo apt-get update
           sudo apt-get install -y qemu-user-static
 
-      - name: 🏗️ Kompilieren mit Docker (ARM OE2.5 Umgebung)
+      - name: 🛠️ Kompilieren mit Docker (OE2.5 Umgebung)
         run: |
           docker run --rm -v ${{ github.workspace }}:/build \
             -w /build \
@@ -26,18 +26,16 @@ jobs:
                                  libssl-dev cmake pkg-config xz-utils && \
               make distclean || true && \
               make USE_LIBUSB=1 USE_SSL=1 USE_EMU=1 \
-                   WITH_EXTENDED_CW=1 WITH_EMMLOG_HEX=1 \
                    CONFIG_ICAM=y CONFIG_HEXDUMP=y \
                    CONF_DIR=/etc/tuxbox/config -j4"
 
-      - name: 💾 OSCam-Binary nach festen Pfad verschieben
+      - name: 📦 Binary nach `output/oscam-dm920` kopieren
         run: |
           mkdir -p output
-          OSCAM_BIN=$(find . -type f -name "oscam*" -executable | head -n1)
-          cp "$OSCAM_BIN" output/oscam-dm920
+          cp $(find . -type f -name "oscam*" -executable | head -n1) output/oscam-dm920
 
-      - name: 📦 Upload der OSCam-Binary
+      - name: 💾 Upload OSCam-Binary
         uses: actions/upload-artifact@v4
         with:
-          name: oscam-icam-dm920
+          name: oscam-dm920
           path: output/oscam-dm920
