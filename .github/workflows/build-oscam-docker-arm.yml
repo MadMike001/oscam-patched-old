@@ -1,4 +1,4 @@
-name: Build OSCam for Dreambox OE2.5 (ICAM+EMU+Hexdump)
+name: Build OSCam for Dreambox OE2.5 (ICAM + EMU + Hexdump)
 
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ jobs:
       - name: 📥 Repository klonen
         uses: actions/checkout@v4
 
-      - name: ⬇️ Toolchain herunterladen (Dreambox-kompatibel)
+      - name: ⬇️ Toolchain von GitHub Release laden
         run: |
           mkdir -p toolchain
           curl -L https://github.com/MadMike001/oscam-patched-old/archive/refs/tags/toolchain-v1.tar.gz -o toolchain.tar.gz
@@ -20,11 +20,10 @@ jobs:
       - name: 🔧 Build-Umgebung vorbereiten
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libusb-1.0-0-dev \
-                                  libpcsclite-dev libssl-dev \
-                                  pkg-config cmake binutils xz-utils
+          sudo apt-get install -y build-essential libusb-1.0-0-dev libpcsclite-dev \
+                                  libssl-dev cmake pkg-config binutils xz-utils
 
-      - name: 🛠️ OSCam bauen für Dreambox OE2.5
+      - name: 🛠️ Kompilieren mit alter OE2.5 Toolchain
         run: |
           export PATH="${GITHUB_WORKSPACE}/toolchain/bin:$PATH"
           export CROSS=arm-oe-linux-gnueabi-
@@ -38,7 +37,7 @@ jobs:
             CONFIG_HEXDUMP=y \
             CONF_DIR=/etc/tuxbox/config
 
-      - name: 🔍 Binary-Datei ermitteln
+      - name: 🔍 Binary-Dateipfad ermitteln
         id: oscamfile
         run: |
           file=$(find . -type f -name "oscam*" -executable | head -n1)
